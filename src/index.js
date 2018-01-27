@@ -36,7 +36,7 @@ const languageString = {
     'en': {
         'translation': {
             'QUESTIONS': questions['QUESTIONS_EN_US'],
-            'GAME_NAME': 'O and M Trivia', 
+            'GAME_NAME': 'Orientation and Mobility Trivia', 
             'HELP_MESSAGE': 'I will ask you %s multiple choice questions. Respond with the number of the answer. ' +
                 'For example, say one, two, three, or four. To start a new game at any time, say, start game. ',
             'REPEAT_QUESTION_MESSAGE': 'To repeat the last question, say, repeat. ',
@@ -63,7 +63,7 @@ const languageString = {
     'en-US': {
         'translation': {
             'QUESTIONS': questions['QUESTIONS_EN_US'],
-            'GAME_NAME': 'American O and M Trivia', // Be sure to change this for your skill.
+            'GAME_NAME': 'A. P. H. Orientation and Mobility Trivia', // Be sure to change this for your skill.
         },
     },
     'en-GB': {
