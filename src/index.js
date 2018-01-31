@@ -13,7 +13,7 @@
 'use strict';
 
 const Alexa = require('alexa-sdk');
-const questions = require('./question');
+const QuestionLoader = require('QuestionsLoader');
 
 const ANSWER_TYPES = {
     TRUE_FALSE:'TRUE_FALSE',
@@ -26,17 +26,17 @@ const GAME_STATES = {
     START: '_STARTMODE', // Entry point, start the game.
     HELP: '_HELPMODE', // The user is asking for help.
 };
-const APP_ID = "amzn1.ask.skill.5a7ddc3b-cb36-4d87-82ce-a007c22b0fdd"; 
+const APP_ID = "amzn1.ask.skill.ed9e8909-2925-4555-9fd6-18a95b193745"; 
 
 /**
  * When editing your questions pay attention to your punctuation. Make sure you use question marks or periods.
  * Make sure the first answer is the correct one. Set at least ANSWER_COUNT answers, any extras will be shuffled in.
  */
 const languageString = {
-    'en': {
+    'en-US': {
         'translation': {
-            'QUESTIONS': questions['QUESTIONS_EN_US'],
             'GAME_NAME': 'Orientation and Mobility Trivia', 
+            'WELCOME': 'Welcome to A.P.H. Orientation And Mobility Trivia',
             'HELP_MESSAGE': 'I will ask you %s multiple choice questions. Respond with the number of the answer. ' +
                 'For example, say one, two, three, or four. To start a new game at any time, say, start game. ',
             'REPEAT_QUESTION_MESSAGE': 'To repeat the last question, say, repeat. ',
@@ -60,15 +60,8 @@ const languageString = {
             'SCORE_IS_MESSAGE': 'Your score is %s. ',
         },
     },
-    'en-US': {
-        'translation': {
-            'QUESTIONS': questions['QUESTIONS_EN_US'],
-            'GAME_NAME': 'A. P. H. Orientation and Mobility Trivia', // Be sure to change this for your skill.
-        },
-    },
     'en-GB': {
         'translation': {
-            'QUESTIONS': questions['QUESTIONS_EN_GB'],
             'GAME_NAME': 'British O and M Trivia', // Be sure to change this for your skill.
         },
     },
@@ -77,7 +70,9 @@ const languageString = {
 const newSessionHandlers = {
     'LaunchRequest': function () {
         this.handler.state = GAME_STATES.START;
-        this.emitWithState('StartGame', true);
+        const speechOutput = this.t('WELCOME');
+        this.response.speak(speechOutput);
+        this.emit(':responseReady');
     },
     'AMAZON.StartOverIntent': function () {
         this.handler.state = GAME_STATES.START;
@@ -223,7 +218,7 @@ const startStateHandlers = Alexa.CreateStateHandler(GAME_STATES.START, {
     'StartGame': function (newGame) {
         let speechOutput = newGame ? this.t('NEW_GAME_MESSAGE', this.t('GAME_NAME')) + this.t('WELCOME_MESSAGE', GAME_LENGTH.toString()) : '';
         // Select GAME_LENGTH questions for the game
-        const translatedQuestions = this.t('QUESTIONS');
+        const translatedQuestions = ['1','2','3','4','5'];
         const gameQuestions = populateGameQuestions(translatedQuestions);
         // Generate a random index for the correct answer, from 0 to 3
         const correctAnswerIndex = Math.floor(Math.random() * (ANSWER_COUNT));
