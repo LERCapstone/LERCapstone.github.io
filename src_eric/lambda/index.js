@@ -49,8 +49,6 @@ const languageString = {
             'RETURN_TO_MENU_FROM_HELP_MESSAGE': 'Say resume to go back to the menu.',
             
             
-            'HELP_MESSAGE': 'I will ask you %s multiple choice questions. Respond with the number of the answer. ' +
-                'For example, say one, two, three, or four. To start a new game at any time, say, start game. ',
             'REPEAT_QUESTION_MESSAGE': 'To repeat the last question, say, repeat. ',
             'ASK_MESSAGE_START': 'Would you like to start playing?',
             'HELP_REPROMPT': 'To give an answer to a question, respond with the number of the answer. ',
@@ -67,6 +65,8 @@ const languageString = {
             'TELL_QUESTION_MESSAGE': 'Question %s. %s ',
             'GAME_OVER_MESSAGE': 'You got %s out of %s questions correct. Thank you for playing!',
             'SCORE_IS_MESSAGE': 'Your score is %s. ',
+            
+            'GOODBYE_MESSAGE': 'Ok, we\'ll play another time. Goodbye!',
         },
     },
     'en-US': {
@@ -78,25 +78,6 @@ const languageString = {
         'translation': {
             'GAME_NAME': 'British O and M Trivia', // Be sure to change this for your skill.
         },
-    },
-};
-
-const newSessionHandlers = {
-    'LaunchRequest': function () {
-        this.handler.state = GAME_STATES.MENU;
-        this.emitWithState('MainMenu');
-    },
-    'AMAZON.StartOverIntent': function () {
-        this.handler.state = GAME_STATES.MENU;
-        this.emitWithState('MainMenu');
-    },
-    'AMAZON.HelpIntent': function () {
-        this.handler.state = GAME_STATES.HELP;
-        this.emitWithState('helpTheUser', true);
-    },
-    'Unhandled': function () {
-        const speechOutput = this.t('START_UNHANDLED');
-        this.emit(':ask', speechOutput, speechOutput);
     },
 };
 
@@ -218,6 +199,17 @@ function handleUserGuess(userGaveUp) {
     }
 }
 
+const newSessionHandlers = {
+    'LaunchRequest': function () {
+        this.handler.state = GAME_STATES.MENU;
+        this.emitWithState('MainMenu');
+    },
+    'Unhandled': function () {
+        const speechOutput = this.t('START_UNHANDLED');
+        this.emit(':ask', speechOutput, speechOutput);
+    },
+};
+
 const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
     'MainMenu': function () {
         const speechOutput = this.t('WELCOME_MESSAGE') + this.t('MAIN_MENU');
@@ -253,23 +245,12 @@ const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
     'AMAZON.RepeatIntent': function () {
         this.emit(':ask', this.attributes['speechOutput'], this.attributes['repromptText']);
     },
-    'AMAZON.HelpIntent': function () {
-        this.handler.state = GAME_STATES.HELP;
-        this.emitWithState('mainMenuHelp');
-    },
     'AMAZON.StopIntent': function () {
-        this.handler.state = GAME_STATES.HELP;
-        const speechOutput = this.t('STOP_MESSAGE');
-        this.emit(':ask', speechOutput, speechOutput);
+        const speechOutput = this.t('GOODBYE_MESSAGE');
+        this.emit(':tell', speechOutput);
     },
     'AMAZON.CancelIntent': function () {
-        this.emit(':tell', this.t('CANCEL_MESSAGE'));
-    },
-    'AMAZON.PauseIntent': function () {
-        this.emit(':tell', this.t('CANCEL_MESSAGE'));
-    },
-     'AMAZON.ResumeIntent': function () {
-        this.emit(':tell', this.t('CANCEL_MESSAGE'));
+        this.emit(':tell', this.t('GOODBYE_MESSAGE'));
     },
     'AMAZON.HelpIntent': function () {
         this.handler.state = GAME_STATES.HELP;
