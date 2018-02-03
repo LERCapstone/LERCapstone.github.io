@@ -211,10 +211,10 @@ function handleUserGuess(userGaveUp) {
 }
 
 const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
-    'MainMenu': function (newGame) {
+    'MainMenu': function () {
         const speechOutput = this.t('WELCOME_MESSAGE') + this.t('MAIN_MENU');
         const repromptText = this.t('MAIN_MENU');
-        this.emit(':ask', speechOutput, );
+        this.emit(':ask', speechOutput, repromptText);
     },
     'NewGameIntent': function (newGame) {
         let speechOutput = newGame ? this.t('NEW_GAME_MESSAGE', this.t('GAME_NAME')) + this.t('WELCOME_MESSAGE', GAME_LENGTH.toString()) : '';
@@ -241,6 +241,10 @@ const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
         // Set the current state to trivia mode. The skill will now use handlers defined in triviaStateHandlers
         this.handler.state = GAME_STATES.TRIVIA;
         this.emit(':askWithCard', speechOutput, repromptText, this.t('GAME_NAME'), repromptText);
+    },
+    'AMAZON.HelpIntent': function () {
+        this.handler.state = GAME_STATES.HELP;
+        this.emitWithState('helpTheUser', false);
     },
 });
 
