@@ -1,7 +1,7 @@
 /* eslint-disable  func-names */
 /* eslint-disable  dot-notation */
 /* eslint-disable  new-cap */
-/* eslint quote-props: ['error', 'consistent']*/
+//* eslint quote-props: ['error', 'consistent']*/
 /**
  * This sample demonstrates a simple skill built with the Amazon Alexa Skills
  * nodejs skill development kit.
@@ -13,11 +13,11 @@
 'use strict';
 
 const Alexa = require('alexa-sdk');
-const QuestionLoader = require('QuestionsLoader');
+const questions = require('./node_modules/QuestionsLoader');
 
 const ANSWER_TYPES = {
-    TRUE_FALSE:'TRUE_FALSE',
-    MULTIPLE:'MULTIPLE_CHOICE',
+    TRUE_FALSE: 'TRUE_FALSE',
+    MULTIPLE: 'MULTIPLE_CHOICE',
 }
 const ANSWER_COUNT = 4; // The number of possible answers per trivia question.
 const GAME_LENGTH = 5;  // The number of questions per trivia game.
@@ -25,18 +25,23 @@ const GAME_STATES = {
     TRIVIA: '_TRIVIAMODE', // Asking trivia questions.
     START: '_STARTMODE', // Entry point, start the game.
     HELP: '_HELPMODE', // The user is asking for help.
+    MENU: '_MENUMODE',  //Reads the options for the main menu
+    END: '_ENDMODE', //End of game results.
 };
-const APP_ID = "amzn1.ask.skill.ed9e8909-2925-4555-9fd6-18a95b193745"; 
+const APP_ID = "amzn1.ask.skill.5a7ddc3b-cb36-4d87-82ce-a007c22b0fdd";
 
 /**
  * When editing your questions pay attention to your punctuation. Make sure you use question marks or periods.
  * Make sure the first answer is the correct one. Set at least ANSWER_COUNT answers, any extras will be shuffled in.
  */
 const languageString = {
-    'en': {
+    'en-US': {
         'translation': {
-            'GAME_NAME': 'Orientation and Mobility Trivia', 
-            'WELCOME': 'Welcome to A.P.H. Orientation And Mobility Trivia',
+            'QUESTIONS': questions['QUESTIONS_EN_US'],
+            'GAME_NAME': 'Orientation and Mobility Trivia',
+            'MAIN_MENU': 'Welcome to the A. P. H. Orientation and Mobility Trivia game.  How many players are playing,' +
+                'and what difficuly will you be playing on?',
+
             'HELP_MESSAGE': 'I will ask you %s multiple choice questions. Respond with the number of the answer. ' +
                 'For example, say one, two, three, or four. To start a new game at any time, say, start game. ',
             'REPEAT_QUESTION_MESSAGE': 'To repeat the last question, say, repeat. ',
@@ -58,15 +63,13 @@ const languageString = {
             'TELL_QUESTION_MESSAGE': 'Question %s. %s ',
             'GAME_OVER_MESSAGE': 'You got %s out of %s questions correct. Thank you for playing!',
             'SCORE_IS_MESSAGE': 'Your score is %s. ',
+
         },
     },
-    'en-US': {
-        'translation': {
-            'GAME_NAME': 'A. P. H. Orientation and Mobility Trivia', // Be sure to change this for your skill.
-        },
-    },
+
     'en-GB': {
         'translation': {
+            'QUESTIONS': questions['QUESTIONS_EN_GB'],
             'GAME_NAME': 'British O and M Trivia', // Be sure to change this for your skill.
         },
     },
@@ -75,9 +78,7 @@ const languageString = {
 const newSessionHandlers = {
     'LaunchRequest': function () {
         this.handler.state = GAME_STATES.START;
-        const speechOutput = 'Welcome to A.P.H. Orientation And Mobility Trivia';
-        this.response.speak(speechOutput);
-        this.emit(':responseReady');
+        this.emitWithState('StartGame', true);
     },
     'AMAZON.StartOverIntent': function () {
         this.handler.state = GAME_STATES.START;
@@ -86,6 +87,10 @@ const newSessionHandlers = {
     'AMAZON.HelpIntent': function () {
         this.handler.state = GAME_STATES.HELP;
         this.emitWithState('helpTheUser', true);
+    },
+    'EndGameIntent': function () {
+        this.handler.state = GAME_STATES.END;
+        this.emitWithState('')
     },
     'Unhandled': function () {
         const speechOutput = this.t('START_UNHANDLED');
@@ -173,6 +178,7 @@ function handleUserGuess(userGaveUp) {
     const correctAnswerText = this.attributes.correctAnswerText;
     const translatedQuestions = this.t('QUESTIONS');
 
+    //*** This checks the given answer to the array of correct answers attributes['correctAnswerIndex']
     if (answerSlotValid && parseInt(this.event.request.intent.slots.Answer.value, 10) === this.attributes['correctAnswerIndex']) {
         currentScore++;
         speechOutputAnalysis = this.t('ANSWER_CORRECT_MESSAGE');
@@ -187,6 +193,8 @@ function handleUserGuess(userGaveUp) {
     // Check if we can exit the game session after GAME_LENGTH questions (zero-indexed)
     if (this.attributes['currentQuestionIndex'] === GAME_LENGTH - 1) {
         speechOutput = userGaveUp ? '' : this.t('ANSWER_IS_MESSAGE');
+
+        //This line will be replaced by the End of Game state.  Right now they do the same thing.
         speechOutput += speechOutputAnalysis + this.t('GAME_OVER_MESSAGE', currentScore.toString(), GAME_LENGTH.toString());
 
         this.emit(':tell', speechOutput);
@@ -223,7 +231,7 @@ const startStateHandlers = Alexa.CreateStateHandler(GAME_STATES.START, {
     'StartGame': function (newGame) {
         let speechOutput = newGame ? this.t('NEW_GAME_MESSAGE', this.t('GAME_NAME')) + this.t('WELCOME_MESSAGE', GAME_LENGTH.toString()) : '';
         // Select GAME_LENGTH questions for the game
-        const translatedQuestions = ['1','2','3','4','5'];
+        const translatedQuestions = this.t('QUESTIONS');
         const gameQuestions = populateGameQuestions(translatedQuestions);
         // Generate a random index for the correct answer, from 0 to 3
         const correctAnswerIndex = Math.floor(Math.random() * (ANSWER_COUNT));
@@ -269,6 +277,10 @@ const triviaStateHandlers = Alexa.CreateStateHandler(GAME_STATES.TRIVIA, {
     'AMAZON.RepeatIntent': function () {
         this.emit(':ask', this.attributes['speechOutput'], this.attributes['repromptText']);
     },
+    'MainMenuIntent': function () {
+        this.handler.state = GAME_STATES.MENU;
+        this.emitWithState('MainMenu');
+    },
     'AMAZON.HelpIntent': function () {
         this.handler.state = GAME_STATES.HELP;
         this.emitWithState('helpTheUser', false);
@@ -288,6 +300,20 @@ const triviaStateHandlers = Alexa.CreateStateHandler(GAME_STATES.TRIVIA, {
     'SessionEndedRequest': function () {
         console.log(`Session ended in trivia state: ${this.event.request.reason}`);
     },
+});
+
+const endStateHandlers = Alexa.CreateStateHandler(GAME_STATES.END, {
+    'endTheGame': function (newGame) {
+        const speechOutput = this.t('GAME_OVER_MESSAGE', this.attributes.score.toString(), GAME_LENGTH.toString());
+        this.emit(':tell', speechOutput);
+    }
+});
+
+const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
+    'MainMenu': function (newGame) {
+        const speechOutput = this.t('MAIN_MENU');
+        this.emit(':ask', speechOutput);
+    }
 });
 
 const helpStateHandlers = Alexa.CreateStateHandler(GAME_STATES.HELP, {
@@ -337,6 +363,14 @@ const helpStateHandlers = Alexa.CreateStateHandler(GAME_STATES.HELP, {
         console.log(`Session ended in help state: ${this.event.request.reason}`);
     },
 });
+
+exports.handler = function (event, context) {
+    const alexa = Alexa.handler(event, context);
+    alexa.appId = APP_ID;
+    alexa.registerHandlers(newSessionHandlers, startStateHandlers, triviaStateHandlers, helpStateHandlers);
+    alexa.execute();
+};
+
 
 exports.handler = function (event, context) {
     const alexa = Alexa.handler(event, context);
