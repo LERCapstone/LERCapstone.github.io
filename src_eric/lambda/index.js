@@ -246,8 +246,7 @@ const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
         this.emit(':ask', this.attributes['speechOutput'], this.attributes['repromptText']);
     },
     'AMAZON.StopIntent': function () {
-        const speechOutput = this.t('GOODBYE_MESSAGE');
-        this.emit(':tell', speechOutput);
+        this.emit(':tell', this.t('GOODBYE_MESSAGE'));
     },
     'AMAZON.CancelIntent': function () {
         this.emit(':tell', this.t('GOODBYE_MESSAGE'));
@@ -277,18 +276,17 @@ const triviaStateHandlers = Alexa.CreateStateHandler(GAME_STATES.TRIVIA, {
         this.emitWithState('triviaHelp');
     },
     'AMAZON.StopIntent': function () {
-        this.handler.state = GAME_STATES.HELP;
-        const speechOutput = this.t('STOP_MESSAGE');
-        this.emit(':ask', speechOutput, speechOutput);
+        this.emit(':tell', this.t('GOODBYE_MESSAGE'));
     },
     'AMAZON.CancelIntent': function () {
-        this.emit(':tell', this.t('CANCEL_MESSAGE'));
+        this.handler.state = GAME_STATES.MENU;
+        this.emitWithState('MainMenu');
     },
     'AMAZON.PauseIntent': function () {
-        this.emit(':tell', this.t('CANCEL_MESSAGE'));
+        this.emit(':tell', this.t('GOODBYE_MESSAGE'));
     },
      'AMAZON.ResumeIntent': function () {
-        this.emit(':tell', this.t('CANCEL_MESSAGE'));
+        this.emit(':tell', this.t('GOODBYE_MESSAGE'));
     },
     'Unhandled': function () {
         const speechOutput = this.t('TRIVIA_UNHANDLED', ANSWER_COUNT.toString());
