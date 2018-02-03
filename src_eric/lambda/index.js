@@ -54,10 +54,7 @@ const languageString = {
             'HELP_REPROMPT': 'To give an answer to a question, respond with the number of the answer. ',
             'STOP_MESSAGE': 'Would you like to keep playing?',
             'CANCEL_MESSAGE': 'Ok, let\'s play again soon.',
-            'NO_MESSAGE': 'Ok, we\'ll play another time. Goodbye!',
             'TRIVIA_UNHANDLED': 'Try saying a number between 1 and %s',
-            'HELP_UNHANDLED': 'Say yes to continue, or no to end the game.',
-            'START_UNHANDLED': 'Say start to start a new game.',
             'ANSWER_CORRECT_MESSAGE': 'correct. ',
             'ANSWER_WRONG_MESSAGE': 'wrong. ',
             'CORRECT_ANSWER_MESSAGE': 'The correct answer is %s: %s. ',
@@ -255,6 +252,13 @@ const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
         this.handler.state = GAME_STATES.HELP;
         this.emitWithState('mainMenuHelp');
     },
+    'Unhandled': function () {
+        const speechOutput = this.t('MAIN_MENU');
+        this.emit(':ask', speechOutput, speechOutput);
+    },
+    'SessionEndedRequest': function () {
+        console.log(`Session ended in trivia state: ${this.event.request.reason}`);
+    },
 });
 
 const triviaStateHandlers = Alexa.CreateStateHandler(GAME_STATES.TRIVIA, {
@@ -312,10 +316,6 @@ const helpStateHandlers = Alexa.CreateStateHandler(GAME_STATES.HELP, {
         this.handler.state = GAME_STATES.TRIVIA;
         this.emit(':ask', speechOutput, repromptText);
     },    
-    'Unhandled': function () {
-        const speechOutput = this.t('HELP_UNHANDLED');
-        this.emit(':ask', speechOutput, speechOutput);
-    },
     'SessionEndedRequest': function () {
         console.log(`Session ended in help state: ${this.event.request.reason}`);
     },
