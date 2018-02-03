@@ -38,6 +38,17 @@ const languageString = {
             'GAME_NAME': 'Orientation and Mobility Trivia',
             'MAIN_MENU': 'Main Menu. Say start a new game or how to play.',
             'WELCOME': 'Welcome to A.P.H. Orientation And Mobility Trivia', /* Edit for correct name*/
+            
+            'INSTRUCTIONS_MESSAGE': 'I will ask you a series of %s questions per player. ' + 
+            'Listen to the answer options and say the number of the answer that you think is correct. ' +
+            'At the end I will total the scores and announce the winner.',
+            'PROMPTS_MESSAGE': 'At any time, you can say the following options. '+
+            'Main menu. Start New Game. Pause Game. Resume Game. Cancel Game. Help. Exit.',
+            'REPEAT_INSTRUCTIONS_MESSAGE': 'Say repeat to listen to these instructions again.',
+            'RETURN_TO_GAME_FROM_HELP_MESSAGE': 'Say resume to continue with the game.',
+            'RETURN_TO_MENU_FROM_HELP_MESSAGE': 'Say resume to go back to the menu.',
+            
+            
             'HELP_MESSAGE': 'I will ask you %s multiple choice questions. Respond with the number of the answer. ' +
                 'For example, say one, two, three, or four. To start a new game at any time, say, start game. ',
             'REPEAT_QUESTION_MESSAGE': 'To repeat the last question, say, repeat. ',
@@ -49,9 +60,6 @@ const languageString = {
             'TRIVIA_UNHANDLED': 'Try saying a number between 1 and %s',
             'HELP_UNHANDLED': 'Say yes to continue, or no to end the game.',
             'START_UNHANDLED': 'Say start to start a new game.',
-            'NEW_GAME_MESSAGE': 'Welcome to %s. ',
-            'WELCOME_MESSAGE': 'I will ask you %s questions, try to get as many right as you can. ' +
-            'Just say the number of the answer. Let\'s begin. ',
             'ANSWER_CORRECT_MESSAGE': 'correct. ',
             'ANSWER_WRONG_MESSAGE': 'wrong. ',
             'CORRECT_ANSWER_MESSAGE': 'The correct answer is %s: %s. ',
@@ -288,7 +296,15 @@ const triviaStateHandlers = Alexa.CreateStateHandler(GAME_STATES.TRIVIA, {
 });
 
 const helpStateHandlers = Alexa.CreateStateHandler(GAME_STATES.HELP, {
-    'helpTheUser': function (newGame) {
+    'mainMenuHelp': function () {
+        const 
+        const askMessage = newGame ? this.t('ASK_MESSAGE_START') : this.t('REPEAT_QUESTION_MESSAGE') + this.t('STOP_MESSAGE');
+        const speechOutput = this.t('HELP_MESSAGE', GAME_LENGTH) + askMessage;
+        const repromptText = this.t('HELP_REPROMPT') + askMessage;
+        this.emit(':ask', speechOutput, repromptText);
+    },
+    'triviaHelp': function () {
+        const 
         const askMessage = newGame ? this.t('ASK_MESSAGE_START') : this.t('REPEAT_QUESTION_MESSAGE') + this.t('STOP_MESSAGE');
         const speechOutput = this.t('HELP_MESSAGE', GAME_LENGTH) + askMessage;
         const repromptText = this.t('HELP_REPROMPT') + askMessage;
