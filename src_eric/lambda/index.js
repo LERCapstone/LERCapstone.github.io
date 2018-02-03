@@ -255,7 +255,7 @@ const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
     },
     'AMAZON.HelpIntent': function () {
         this.handler.state = GAME_STATES.HELP;
-        this.emitWithState('helpTheUser', false);
+        this.emitWithState('mainMenuHelp');
     },
     'AMAZON.StopIntent': function () {
         this.handler.state = GAME_STATES.HELP;
@@ -330,7 +330,7 @@ const helpStateHandlers = Alexa.CreateStateHandler(GAME_STATES.HELP, {
         const helpMessage = this.t('INSTRUCTIONS_MESSAGE', GAME_LENGTH) + this.t('PROMPTS_MESSAGE');
         const speechOutput = helpMessage + + this.t('REPEAT_INSTRUCTIONS_MESSAGE') + this.t('RETURN_TO_GAME_FROM_HELP_MESSAGE');
         const repromptText = speechOutput;
-        this.handler.state = GAME_STATES.MENU;
+        this.handler.state = GAME_STATES.TRIVIA;
         this.emit(':ask', speechOutput, repromptText);
     },    
     'Unhandled': function () {
