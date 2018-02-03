@@ -213,7 +213,8 @@ function handleUserGuess(userGaveUp) {
 const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
     'MainMenu': function (newGame) {
         const speechOutput = this.t('WELCOME_MESSAGE') + this.t('MAIN_MENU');
-        this.emit(':ask', speechOutput);
+        const repromptText = this.t('MAIN_MENU');
+        this.emit(':ask', speechOutput, );
     },
     'NewGameIntent': function (newGame) {
         let speechOutput = newGame ? this.t('NEW_GAME_MESSAGE', this.t('GAME_NAME')) + this.t('WELCOME_MESSAGE', GAME_LENGTH.toString()) : '';
