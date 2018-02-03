@@ -23,7 +23,7 @@ const ANSWER_COUNT = 4; // The number of possible answers per trivia question.
 const GAME_LENGTH = 5;  // The number of questions per trivia game.
 const GAME_STATES = {
     TRIVIA: '_TRIVIAMODE', // Asking trivia questions.
-    START: '_STARTMODE', // Entry point, start the game.
+    MENU: '_MENUMODE', // Entry point, start the game.
     HELP: '_HELPMODE', // The user is asking for help.
 };
 const APP_ID = "amzn1.ask.skill.6f1a7ecf-c347-421b-b045-1d26b3625a9e"; 
@@ -35,8 +35,9 @@ const APP_ID = "amzn1.ask.skill.6f1a7ecf-c347-421b-b045-1d26b3625a9e";
 const languageString = {
     'en': {
         'translation': {
-            'GAME_NAME': 'Orientation and Mobility Trivia', 
-            'WELCOME': 'Welcome to A.P.H. Orientation And Mobility Trivia',
+            'GAME_NAME': 'Orientation and Mobility Trivia',
+            'MAIN_MENU': 'Main Menu. Say start a new game or how to play.',
+            'WELCOME': 'Welcome to A.P.H. Orientation And Mobility Trivia', /* Edit for correct name*/
             'HELP_MESSAGE': 'I will ask you %s multiple choice questions. Respond with the number of the answer. ' +
                 'For example, say one, two, three, or four. To start a new game at any time, say, start game. ',
             'REPEAT_QUESTION_MESSAGE': 'To repeat the last question, say, repeat. ',
@@ -74,15 +75,12 @@ const languageString = {
 
 const newSessionHandlers = {
     'LaunchRequest': function () {
-        this.handler.state = GAME_STATES.START;
-        
-        const speechOutput = 'Welcome to A.P.H. Orientation And Mobility Trivia';
-        this.response.speak(speechOutput);
-        this.emit(':responseReady');
+        this.handler.state = GAME_STATES.MENU;
+        this.emitWithState('MainMenu');
     },
     'AMAZON.StartOverIntent': function () {
-        this.handler.state = GAME_STATES.START;
-        this.emitWithState('StartGame', true);
+        this.handler.state = GAME_STATES.MENU;
+        this.emitWithState('MainMenu');
     },
     'AMAZON.HelpIntent': function () {
         this.handler.state = GAME_STATES.HELP;
@@ -96,23 +94,18 @@ const newSessionHandlers = {
 
 function populateGameQuestions(difficulty) {
     const gameQuestions = [];
-    const indexList = [];
     
     var thing = function(result){
             //console.log("%j", result);//print JSON object as a String
             gameQuestions = result;
         };
+        
+        gameQuestions[currentQuestionIndex]['question_text']
 
     QuestionLoader.retrieveQuiz(GAME_LENGTH, difficulty, thing); // difficulty: 1 = easy difficulty, 2=medium, 3=hard
-        
-    let index = gameQuestions.length;
-
-    if (GAME_LENGTH > index) {
+     
+    if (GAME_LENGTH > gameQuestions.length) {
         throw new Error('Invalid Game Length.');
-    }
-
-    for (let i = 0; i < gameQuestions.length; i++) {
-        indexList.push(i);
     }
 
     return gameQuestions;
@@ -217,15 +210,15 @@ function handleUserGuess(userGaveUp) {
     }
 }
 
-const startStateHandlers = Alexa.CreateStateHandler(GAME_STATES.START, {
+const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
+    'MainMenu': function (newGame) {
+        const speechOutput = this.t('WELCOME_MESSAGE') + this.t('MAIN_MENU');
+        this.emit(':ask', speechOutput);
+    },
     'NewGameIntent': function (newGame) {
         let speechOutput = newGame ? this.t('NEW_GAME_MESSAGE', this.t('GAME_NAME')) + this.t('WELCOME_MESSAGE', GAME_LENGTH.toString()) : '';
         // Select GAME_LENGTH questions for the game
-        const gameQuestions = populateGameQuestions();
-        // Generate a random index for the correct answer, from 0 to 3
-        const correctAnswerIndex = Math.floor(Math.random() * (ANSWER_COUNT));
-        // Select and shuffle the answers for each question
-        const roundAnswers = populateRoundAnswers(gameQuestions, 0, correctAnswerIndex, translatedQuestions);
+        const gameQuestions = populateGameQuestions(difficulty);
         const currentQuestionIndex = 0;
         const spokenQuestion = Object.keys(translatedQuestions[gameQuestions[currentQuestionIndex]])[0];
         let repromptText = this.t('TELL_QUESTION_MESSAGE', '1', spokenQuestion);
@@ -240,10 +233,8 @@ const startStateHandlers = Alexa.CreateStateHandler(GAME_STATES.START, {
             'speechOutput': repromptText,
             'repromptText': repromptText,
             'currentQuestionIndex': currentQuestionIndex,
-            'correctAnswerIndex': correctAnswerIndex + 1,
             'questions': gameQuestions,
             'score': 0,
-            'correctAnswerText': translatedQuestions[gameQuestions[currentQuestionIndex]][Object.keys(translatedQuestions[gameQuestions[currentQuestionIndex]])[0]][0],
         });
 
         // Set the current state to trivia mode. The skill will now use handlers defined in triviaStateHandlers
@@ -256,6 +247,10 @@ const triviaStateHandlers = Alexa.CreateStateHandler(GAME_STATES.TRIVIA, {
     'AnswerIntent': function () {
         handleUserGuess.call(this, false);
     },
+    'MainMenuIntent': function() {
+        this.handler.state = GAME_STATES.MENU;
+        this.emitWithState('MainMenu');
+    }
     'DontKnowIntent': function () {
         handleUserGuess.call(this, true);
     },
