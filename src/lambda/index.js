@@ -25,7 +25,7 @@ const GAME_STATES = {
     MENU: '_MENUMODE', // Entry point, start the game.
     HELP: '_HELPMODE', // The user is asking for help.
 };
-const APP_ID = "amzn1.ask.skill.ed9e8909-2925-4555-9fd6-18a95b193745"; 
+const APP_ID = "amzn1.ask.skill.ed9e8909-2925-4555-9fd6-18a95b193745";
 
 /**
  * When editing your questions pay attention to your punctuation. Make sure you use question marks or periods.
@@ -37,8 +37,8 @@ const languageString = {
             'GAME_NAME': 'Orientation and Mobility Trivia',
             'MAIN_MENU': 'Main Menu. Say start a new game or how to play.',
             'WELCOME_MESSAGE': 'Welcome to A.P.H. Orientation And Mobility Trivia. ', /* Edit for correct name*/
-            
-            'INSTRUCTIONS_MESSAGE': 'I will ask you a series of %s questions per player. ' + 
+
+            'INSTRUCTIONS_MESSAGE': 'I will ask you a series of %s questions per player. ' +
             'Listen to the answer options and say the number of the answer that you think is correct. ' +
             'At the end I will total the scores and announce the winner.',
             'PROMPTS_MESSAGE': 'At any time, you can say the following options. '+
@@ -46,8 +46,8 @@ const languageString = {
             'REPEAT_INSTRUCTIONS_MESSAGE': 'Say help to listen to these instructions again or at any time.',
             'RETURN_TO_GAME_FROM_HELP_MESSAGE': 'Say resume to continue with the game.',
             'RETURN_TO_MENU_FROM_HELP_MESSAGE': 'Say resume to go back to the menu.',
-            
-            
+
+
             'REPEAT_QUESTION_MESSAGE': 'To repeat the last question, say, repeat. ',
             'ASK_MESSAGE_START': 'Would you like to start playing?',
             'HELP_REPROMPT': 'To give an answer to a question, respond with the number of the answer. ',
@@ -61,7 +61,7 @@ const languageString = {
             'TELL_QUESTION_MESSAGE': 'Player %s. Question %s. %s ',
             'GAME_OVER_MESSAGE': 'You got %s out of %s questions correct. Thank you for playing!',
             'SCORE_IS_MESSAGE': 'Your score is %s. ',
-            
+
             'GOODBYE_MESSAGE': 'Ok, we\'ll play another time. Goodbye!',
         },
     },
@@ -72,23 +72,23 @@ const languageString = {
     },
     'en-GB': {
         'translation': {
-            'GAME_NAME': 'British O and M Trivia', 
+            'GAME_NAME': 'British O and M Trivia',
         },
     },
 };
 
 function populateGameQuestions(difficulty) {
     const gameQuestions = [];
-    
+
     var thing = function(result){
             //console.log("%j", result);//print JSON object as a String
             gameQuestions = result;
         };
-        
+
         gameQuestions[currentQuestionIndex]['question_text']
 
     QuestionLoader.retrieveQuiz(GAME_LENGTH, difficulty, thing); // difficulty: 1 = easy difficulty, 2=medium, 3=hard
-     
+
     if (GAME_LENGTH > gameQuestions.length) {
         throw new Error('Invalid Game Length.');
     }
@@ -102,11 +102,11 @@ function populateGameQuestions(difficulty) {
  * only ANSWER_COUNT will be selected.
  * */
 function randonmizationRoundAnswers(currentAnswerArray) {
-    
+
 }
 
 /*
-**Validates 
+**Validates
 */
 function isAnswerSlotValid(intent) {
     const answerSlotFilled = intent && intent.slots && intent.slots.Answer && intent.slots.Answer.value;
@@ -179,19 +179,19 @@ function populateQuestionSpeech(currentQuestionIndex, gameQuestions){
     for(let i = 0; i < unsortedAnswerDictionaries.length; i++){
         unsortedAnswersArray[i] = unsortedAnswerDictionaries[i]['answer_text'];
     }
-    
+
     //Randomize answer strings and get correct answer index
     const randomRoundAnswers = randonmizationRoundAnswers(unsortedAnswersArray);
     const currentCorrectAnswerIndex = randomRoundAnswers.indexOf(gameQuestions[currentQuestionIndex]['correct_answer']);
-    
+
     //Build Question Text
     const spokenQuestion = gameQuestions[currentQuestionIndex]['question_text'];
     let repromptText = this.t('TELL_QUESTION_MESSAGE', (currentQuestionIndex % parseInt(this.attributes['numberOfPlayers'])) + 1, (currentQuestionIndex + 1).toString(), spokenQuestion);
-    
+
     for (let i = 0; i < randomRoundAnswers.length; i++) {
         repromptText += `${i + 1}. ${randomRoundAnswers[i]}. `;
     }
-    
+
     //Assign all items to Alexa object
     Object.assign(this.attributes, {
         'speechOutput': repromptText,
@@ -220,10 +220,15 @@ const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
         this.emit(':ask', speechOutput, repromptText);
     },
     'NewGameIntent': function (newGame) {
-        if(this.event.request.dialogueState !== 'COMPLETED'){
+        console.log("in delegateSlotCollection");
+        console.log("current dialogState: "+this.event.request.dialogState);
+        if(this.event.request.dialogState !== 'COMPLETED'){
+            console.log("in not completed");
             this.emit(':delegate');
         }
         else{
+            console.log("in completed");
+            console.log(this.intent);
             const difficultyString = this.intent.slots.DifficultyLevel.value;
             var difficulty = 0;
             switch(difficultyString){
@@ -242,19 +247,19 @@ const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
             const numberOfPlayers = this.intent.slots.NumberOfPlayers.value;
             const gameQuestions = populateGameQuestions(difficulty);
             const currentQuestionIndex = 0;
-            
+
             var playerScore = new Array(numberOfPlayers);
             playerScore.fill(0);
-            
+
             Object.assign(this.attributes, {
                 'numberOfPlayers': numberOfPlayers,
                 'currentPlayerScore': playerScore,
             });
-            
+
             populateQuestionSpeech(0, gameQuestions);
-            
+
             const speechOutput = this.attributes['speechOutput'];
-            
+
             this.handler.state = GAME_STATES.TRIVIA;
             this.emit(':askWithCard', speechOutput, speechOutput, this.t('GAME_NAME'), speechOutput);
         }
@@ -335,7 +340,7 @@ const helpStateHandlers = Alexa.CreateStateHandler(GAME_STATES.HELP, {
         const repromptText = speechOutput;
         this.handler.state = GAME_STATES.TRIVIA;
         this.emit(':ask', speechOutput, repromptText);
-    },    
+    },
     'SessionEndedRequest': function () {
         console.log(`Session ended in help state: ${this.event.request.reason}`);
     },
