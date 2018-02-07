@@ -5,6 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "alexa-sdk": "^1.0.16",
+    "async": "^2.6.0",
     "aws-sdk": "^2.141.0",
     "es6-promisify": "^5.0.0",
     "request": "^2.83.0",

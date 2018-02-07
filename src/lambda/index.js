@@ -2,13 +2,6 @@
 /* eslint-disable  dot-notation */
 /* eslint-disable  new-cap */
 /* eslint quote-props: ['error', 'consistent']*/
-/**
- * This sample demonstrates a simple skill built with the Amazon Alexa Skills
- * nodejs skill development kit.
- * This sample supports en-US lauguage.
- * The Intent Schema, Custom Slots and Sample Utterances for this skill, as well
- * as testing instructions are located at https://github.com/alexa/skill-sample-nodejs-trivia
- **/
 
 'use strict';
 
@@ -19,7 +12,8 @@ const ANSWER_TYPES = {
     TRUE_FALSE:'TRUE_FALSE',
     MULTIPLE:'MULTIPLE_CHOICE',
 }
-const GAME_LENGTH = 5;  // The number of questions per trivia game.
+const QUESTIONS_PER_PLAYER = 3; //The number of questions per user per game
+var GAME_LENGTH;  // The number of questions per trivia game.
 const GAME_STATES = {
     TRIVIA: '_TRIVIAMODE', // Asking trivia questions.
     MENU: '_MENUMODE', // Entry point, start the game.
@@ -34,35 +28,44 @@ const APP_ID = "amzn1.ask.skill.ed9e8909-2925-4555-9fd6-18a95b193745";
 const languageString = {
     'en-US': {
         'translation': {
-            'GAME_NAME': 'Orientation and Mobility Trivia',
-            'MAIN_MENU': 'Main Menu. Say start a new game or how to play.',
+            //Menu
+            'GAME_NAME': 'Orientation and Mobility Trivia ',
+            'MAIN_MENU': 'Main Menu. Say start a new game,  how to play, or cancel. ',
             'WELCOME_MESSAGE': 'Welcome to A.P.H. Orientation And Mobility Trivia. ', /* Edit for correct name*/
 
+            //Help
             'INSTRUCTIONS_MESSAGE': 'I will ask you a series of %s questions per player. ' +
             'Listen to the answer options and say the number of the answer that you think is correct. ' +
-            'At the end I will total the scores and announce the winner.',
+            'At the end I will total the scores and announce the winner. ',
             'PROMPTS_MESSAGE': 'At any time, you can say the following options. '+
-            'Main menu. Start New Game. Pause Game. Resume Game. Cancel Game. Help. Exit.',
-            'REPEAT_INSTRUCTIONS_MESSAGE': 'Say help to listen to these instructions again or at any time.',
-            'RETURN_TO_GAME_FROM_HELP_MESSAGE': 'Say resume to continue with the game.',
-            'RETURN_TO_MENU_FROM_HELP_MESSAGE': 'Say resume to go back to the menu.',
+            'Main menu. Start New Game. Pause Game. Resume Game. Cancel Game. Help. Exit. ',
+            'REPEAT_INSTRUCTIONS_MESSAGE': 'Say help to listen to these instructions again or at any time. ',
+            'RETURN_TO_GAME_FROM_HELP_MESSAGE': 'Say resume to continue with the game. ',
+            'RETURN_TO_MENU_FROM_HELP_MESSAGE': 'Say resume to go back to the menu. ',
+            'TRIVIA_UNHANDLED': 'Try saying a number between 1 and %s ',
 
+            //Trivia
+            'START_TRIVIA_INSTRUCTIONS': 'I will ask each player %s questions. The one with the most correct answers at the end is the winner. ' +
+            'To answer a question, say the word [answer] and then the number of the answer you think is correct. Lets begin. ',
+            'TELL_QUESTION_MESSAGE': 'Player %s. Question %s. %s ',
 
-            'REPEAT_QUESTION_MESSAGE': 'To repeat the last question, say, repeat. ',
-            'ASK_MESSAGE_START': 'Would you like to start playing?',
-            'HELP_REPROMPT': 'To give an answer to a question, respond with the number of the answer. ',
-            'STOP_MESSAGE': 'Would you like to keep playing?',
-            'CANCEL_MESSAGE': 'Ok, let\'s play again soon.',
-            'TRIVIA_UNHANDLED': 'Try saying a number between 1 and %s',
+            //Answers
+            'ANSWER_IS_MESSAGE': 'That answer is ',
             'ANSWER_CORRECT_MESSAGE': 'correct. ',
             'ANSWER_WRONG_MESSAGE': 'wrong. ',
             'CORRECT_ANSWER_MESSAGE': 'The correct answer is %s: %s. ',
-            'ANSWER_IS_MESSAGE': 'That answer is ',
-            'TELL_QUESTION_MESSAGE': 'Player %s. Question %s. %s ',
-            'GAME_OVER_MESSAGE': 'You got %s out of %s questions correct. Thank you for playing!',
-            'SCORE_IS_MESSAGE': 'Your score is %s. ',
+            'SCORE_IS_MESSAGE': 'Player %s. Your score is %s. ',
 
-            'GOODBYE_MESSAGE': 'Ok, we\'ll play another time. Goodbye!',
+            //Game Over
+            'FINAL_QUESTION_MESSAGE': 'That was the last question. ',
+            'WINNER_IS_MESSAGE': 'The winner is ',
+            'PLAYER': 'Player %s ',
+            'FINAL_SCORE_MESSAGE': 'You got %s out of %s questions correct. ',
+            'END_OF_GAME_MESSAGE': 'Congratulations to everyone! Thanks for playing! ',
+
+            //Exit
+            'GOODBYE_MESSAGE': 'Ok, we\'ll play another time. Goodbye! ',
+
         },
     },
     'en':{
@@ -77,58 +80,94 @@ const languageString = {
     },
 };
 
-function populateGameQuestions(difficulty) {
-    const gameQuestions = [];
+function populateGameQuestions(difficulty, currentQuestionIndex, callback) {
+    var gameQuestions = [];
 
     var thing = function(result){
-            //console.log("%j", result);//print JSON object as a String
-            gameQuestions = result;
-        };
+        //console.log("%j", result);//print JSON object as a String
+        gameQuestions = result;
+        console.log(result);
 
-        gameQuestions[currentQuestionIndex]['question_text']
+        console.log(gameQuestions);
+        console.log("Question Length: " + gameQuestions.length);
+        console.log("GAME_LENGTH = " + GAME_LENGTH);
 
-    QuestionLoader.retrieveQuiz(GAME_LENGTH, difficulty, thing); // difficulty: 1 = easy difficulty, 2=medium, 3=hard
+        if (GAME_LENGTH > gameQuestions.length) {
+            throw new Error('Invalid Game Length.');
+        }
 
-    if (GAME_LENGTH > gameQuestions.length) {
-        throw new Error('Invalid Game Length.');
-    }
+        console.log("this into populateQuestionSpeech:" + this)
+        callback.call(this, currentQuestionIndex, gameQuestions);
+    };
 
-    return gameQuestions;
+    QuestionLoader.retrieveQuiz(GAME_LENGTH, difficulty, thing.bind(this)); // difficulty: 1 = easy difficulty, 2=medium, 3=hard
+
 }
 
 /**
- * Get the answers for a given question, and place the correct answer at the spot marked by the
- * correctAnswerTargetLocation variable. Note that you can have as many answers as you want but
- * only ANSWER_COUNT will be selected.
+ * Get the answers for a given question,
  * */
 function randonmizationRoundAnswers(currentAnswerArray) {
-
+    return currentAnswerArray;
 }
 
 /*
-**Validates
+**Validates Answers Slot Data
 */
-function isAnswerSlotValid(intent) {
-    const answerSlotFilled = intent && intent.slots && intent.slots.Answer && intent.slots.Answer.value;
-    const answerSlotIsInt = answerSlotFilled && !isNaN(parseInt(intent.slots.Answer.value, 10));
+function isAnswerSlotValid(intent, answerCount) {
+    const answerSlotFilled = intent && intent.slots && intent.slots.Answers && intent.slots.Answers.value;
+    console.log("answerSlotFilled: " + answerSlotFilled);
+    const answerSlotIsInt = answerSlotFilled && !isNaN(parseInt(intent.slots.Answers.value, 10));
+    console.log("answerSlotIsInt: " + answerSlotIsInt);
     return answerSlotIsInt
-        && parseInt(intent.slots.Answer.value, 10) < (ANSWER_COUNT + 1)
-        && parseInt(intent.slots.Answer.value, 10) > 0;
+        && parseInt(intent.slots.Answers.value, 10) < (answerCount + 1)
+        && parseInt(intent.slots.Answers.value, 10) > 0;
+}
+
+function buildEndOfGameMessage(){
+    let currentScore = this.attributes.currentPlayerScore;
+    var highestScore = 0, winners = 0;
+    currentScore.forEach(function(element){
+        if (parseInt(element, 10) > highestScore){
+            highestScore = parseInt(element, 10);
+        }
+    });
+
+    var winnerMessage = this.t('WINNER_IS_MESSAGE');
+    var playerNumber = 1;
+    currentScore.forEach(function(element){
+        if (parseInt(element, 10) == highestScore){
+            winners += 1;
+            if(winners > 1){
+                winnerMessage += "and ";
+            }
+            winnerMessage += this.t('PLAYER', playerNumber);
+        }
+
+        playerNumber++;
+    }.bind(this));
+
+    winnerMessage += ". " +  this.t('FINAL_SCORE_MESSAGE', highestScore, QUESTIONS_PER_PLAYER);
+
+    return this.t('FINAL_QUESTION_MESSAGE') + winnerMessage + this.t('END_OF_GAME_MESSAGE');
 }
 
 function handleUserGuess(userGaveUp) {
-    const answerSlotValid = isAnswerSlotValid(this.event.request.intent);
     let speechOutput = '';
     let speechOutputAnalysis = '';
     const gameQuestions = this.attributes.questions;
-    let correctAnswerIndex = parseInt(this.attributes.correctAnswerIndex, 10);
-    let currentScore = parseInt(this.attributes.score, 10);
     let currentQuestionIndex = parseInt(this.attributes.currentQuestionIndex, 10);
-    const correctAnswerText = this.attributes.correctAnswerText;
-    const translatedQuestions = this.t('QUESTIONS');
+    let correctAnswerIndex = parseInt(this.attributes.correctAnswerIndex, 10);
+    let currentScore = this.attributes.currentPlayerScore;
+    let currentPlayerId = (currentQuestionIndex % parseInt(this.attributes['numberOfPlayers'])) + 1;
+    let correctAnswerText = gameQuestions[currentQuestionIndex]["correct_answer"];
 
-    if (answerSlotValid && parseInt(this.event.request.intent.slots.Answer.value, 10) === this.attributes['correctAnswerIndex']) {
-        currentScore++;
+    const answerSlotValid = isAnswerSlotValid(this.event.request.intent, gameQuestions[currentQuestionIndex]['answers'].length);
+    console.log("Player Guess: " + this.event.request.intent.slots.Answers.value);
+    console.log("Correct Answer Index: " + this.attributes['correctAnswerIndex']);
+    console.log("answerSlotValid: " + answerSlotValid);
+    if (answerSlotValid && parseInt(this.event.request.intent.slots.Answers.value, 10) == this.attributes['correctAnswerIndex']) {
+        currentScore[currentPlayerId - 1] = currentScore[currentPlayerId - 1] + 1;
         speechOutputAnalysis = this.t('ANSWER_CORRECT_MESSAGE');
     } else {
         if (!userGaveUp) {
@@ -141,32 +180,21 @@ function handleUserGuess(userGaveUp) {
     // Check if we can exit the game session after GAME_LENGTH questions (zero-indexed)
     if (this.attributes['currentQuestionIndex'] === GAME_LENGTH - 1) {
         speechOutput = userGaveUp ? '' : this.t('ANSWER_IS_MESSAGE');
-        speechOutput += speechOutputAnalysis + this.t('GAME_OVER_MESSAGE', currentScore.toString(), GAME_LENGTH.toString());
+        speechOutput += speechOutputAnalysis;
+        const endOfGameMessage = buildEndOfGameMessage.call(this);
 
-        this.emit(':tell', speechOutput);
+        this.emit(':tell', speechOutput + endOfGameMessage);
     } else {
         currentQuestionIndex += 1;
-        correctAnswerIndex = Math.floor(Math.random() * (ANSWER_COUNT));
-        const spokenQuestion = Object.keys(translatedQuestions[gameQuestions[currentQuestionIndex]])[0];
-        const roundAnswers = populateRoundAnswers.call(this, gameQuestions, currentQuestionIndex, correctAnswerIndex, translatedQuestions);
-        const questionIndexForSpeech = currentQuestionIndex + 1;
-        let repromptText = this.t('TELL_QUESTION_MESSAGE', questionIndexForSpeech.toString(), spokenQuestion);
+        populateQuestionSpeech.call(this, currentQuestionIndex, gameQuestions)
 
-        for (let i = 0; i < ANSWER_COUNT; i++) {
-            repromptText += `${i + 1}. ${roundAnswers[i]}. `;
-        }
-        Object.assign(this.attributes, {
-            'speechOutput': repromptText,
-            'repromptText': repromptText,
-            'currentQuestionIndex': currentQuestionIndex,
-            'correctAnswerIndex': correctAnswerIndex + 1,
-            'questions': gameQuestions,
-            'score': currentScore,
-        });
-
-
+        const repromptText = this.attributes["repromptText"];
         speechOutput += userGaveUp ? '' : this.t('ANSWER_IS_MESSAGE');
-        speechOutput += speechOutputAnalysis + this.t('SCORE_IS_MESSAGE', currentScore.toString()) + repromptText;
+        console.log("Current Player: " +  currentPlayerId);
+        console.log("Current Score Array: " + currentScore);
+        console.log("Current Player Score: " + currentScore[currentPlayerId - 1]);
+        console.log("repromptText: " + repromptText);
+        speechOutput += speechOutputAnalysis + this.t('SCORE_IS_MESSAGE', currentPlayerId.toString(), currentScore[currentPlayerId - 1].toString()) + repromptText;
 
         this.emit(':askWithCard', speechOutput, repromptText, this.t('GAME_NAME'), repromptText);
     }
@@ -174,6 +202,7 @@ function handleUserGuess(userGaveUp) {
 
 function populateQuestionSpeech(currentQuestionIndex, gameQuestions){
     //Get answer strings into unsorted array
+    console.log("currentQuestionIndex = " + currentQuestionIndex);
     const unsortedAnswerDictionaries = gameQuestions[currentQuestionIndex]['answers'];
     var unsortedAnswersArray = []
     for(let i = 0; i < unsortedAnswerDictionaries.length; i++){
@@ -183,13 +212,16 @@ function populateQuestionSpeech(currentQuestionIndex, gameQuestions){
     //Randomize answer strings and get correct answer index
     const randomRoundAnswers = randonmizationRoundAnswers(unsortedAnswersArray);
     const currentCorrectAnswerIndex = randomRoundAnswers.indexOf(gameQuestions[currentQuestionIndex]['correct_answer']);
+    console.log("Correct Answer Text: " + gameQuestions[currentQuestionIndex]['correct_answer']);
+    console.log("Correct Answer Index: " + (currentCorrectAnswerIndex + 1));
 
     //Build Question Text
-    const spokenQuestion = gameQuestions[currentQuestionIndex]['question_text'];
+    const spokenQuestion = gameQuestions[currentQuestionIndex]['question_text'].replace('&', ' and ').replace(/(_)+/, ' [blank] ');
     let repromptText = this.t('TELL_QUESTION_MESSAGE', (currentQuestionIndex % parseInt(this.attributes['numberOfPlayers'])) + 1, (currentQuestionIndex + 1).toString(), spokenQuestion);
 
     for (let i = 0; i < randomRoundAnswers.length; i++) {
         repromptText += `${i + 1}. ${randomRoundAnswers[i]}. `;
+        console.log("Answer " + (i + 1) + ": " + randomRoundAnswers[i]);
     }
 
     //Assign all items to Alexa object
@@ -200,12 +232,18 @@ function populateQuestionSpeech(currentQuestionIndex, gameQuestions){
         'correctAnswerIndex': currentCorrectAnswerIndex + 1,
         'questions': gameQuestions,
     });
+
+    if(this.handler.state == GAME_STATES.MENU){
+        const speechOutput = this.t('START_TRIVIA_INSTRUCTIONS', QUESTIONS_PER_PLAYER) + repromptText;
+        this.handler.state = GAME_STATES.TRIVIA;
+        this.emit(':askWithCard', speechOutput, repromptText, this.t('GAME_NAME'), repromptText);
+    }
 }
 
 const newSessionHandlers = {
     'LaunchRequest': function () {
         this.handler.state = GAME_STATES.MENU;
-        this.emitWithState('MainMenu');
+        this.emitWithState('MainMenu', true);
     },
     'Unhandled': function () {
         const speechOutput = this.t('START_UNHANDLED');
@@ -214,8 +252,8 @@ const newSessionHandlers = {
 };
 
 const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
-    'MainMenu': function () {
-        const speechOutput = this.t('WELCOME_MESSAGE') + this.t('MAIN_MENU');
+    'MainMenu': function (newGame) {
+        const speechOutput = newGame ? this.t('WELCOME_MESSAGE') + this.t('MAIN_MENU') : this.t('MAIN_MENU');
         const repromptText = this.t('MAIN_MENU');
         this.emit(':ask', speechOutput, repromptText);
     },
@@ -228,8 +266,7 @@ const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
         }
         else{
             console.log("in completed");
-            console.log(this.intent);
-            const difficultyString = this.intent.slots.DifficultyLevel.value;
+            const difficultyString = this.event.request.intent.slots.DifficultyLevel.value;
             var difficulty = 0;
             switch(difficultyString){
                 case 'beginner':
@@ -244,28 +281,32 @@ const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
                 default:
                     difficulty = 1;
             }
-            const numberOfPlayers = this.intent.slots.NumberOfPlayers.value;
-            const gameQuestions = populateGameQuestions(difficulty);
+            const numberOfPlayers = parseInt(this.event.request.intent.slots.NumberOfPlayers.value, 10);
             const currentQuestionIndex = 0;
 
-            var playerScore = new Array(numberOfPlayers);
-            playerScore.fill(0);
+            GAME_LENGTH = QUESTIONS_PER_PLAYER * numberOfPlayers;
+
+            var playerScore = Array(numberOfPlayers).fill(0);
+            console.log("Number of Players: " + numberOfPlayers);
+            console.log("Initial Scores: " + playerScore);
+            console.log("DifficultyString: " + difficultyString);
+            console.log("Difficulty: " + difficulty);
 
             Object.assign(this.attributes, {
                 'numberOfPlayers': numberOfPlayers,
                 'currentPlayerScore': playerScore,
             });
 
-            populateQuestionSpeech(0, gameQuestions);
+            console.log("this into populateGameQuestions: " + this);
+            populateGameQuestions.call(this, difficulty, currentQuestionIndex, populateQuestionSpeech);
 
-            const speechOutput = this.attributes['speechOutput'];
-
-            this.handler.state = GAME_STATES.TRIVIA;
-            this.emit(':askWithCard', speechOutput, speechOutput, this.t('GAME_NAME'), speechOutput);
         }
     },
     'AMAZON.RepeatIntent': function () {
         this.emit(':ask', this.attributes['speechOutput'], this.attributes['repromptText']);
+    },
+    'AMAZON.ResumeIntent': function () {
+        this.emit(':ask', this.t('MAIN_MENU'), this.t('MAIN_MENU'));
     },
     'AMAZON.StopIntent': function () {
         this.emit(':tell', this.t('GOODBYE_MESSAGE'));
@@ -292,7 +333,7 @@ const triviaStateHandlers = Alexa.CreateStateHandler(GAME_STATES.TRIVIA, {
     },
     'MainMenuIntent': function() {
         this.handler.state = GAME_STATES.MENU;
-        this.emitWithState('MainMenu');
+        this.emitWithState('MainMenu', false);
     },
     'DontKnowIntent': function () {
         handleUserGuess.call(this, true);
@@ -309,7 +350,7 @@ const triviaStateHandlers = Alexa.CreateStateHandler(GAME_STATES.TRIVIA, {
     },
     'AMAZON.CancelIntent': function () {
         this.handler.state = GAME_STATES.MENU;
-        this.emitWithState('MainMenu');
+        this.emitWithState('MainMenu', false);
     },
     'AMAZON.PauseIntent': function () {
         this.emit(':tell', this.t('GOODBYE_MESSAGE'));
