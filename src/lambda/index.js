@@ -26,7 +26,7 @@ const languageString = {
         'translation': {
             //Menu
             'GAME_NAME': 'Orientation and Mobility Trivia ',
-            'MAIN_MENU': 'Main Menu. Say start a new game or how to play. ',
+            'MAIN_MENU': 'Say start a new game or how to play. ',
             'WELCOME_MESSAGE': 'Welcome to A.P.H. O And M Trivia. ', /* Edit for correct name*/
 
             //Help
@@ -48,7 +48,7 @@ const languageString = {
             //Answers
             'ANSWER_IS_MESSAGE': 'That answer is ',
             'ANSWER_CORRECT_MESSAGE': 'correct. ',
-            'ANSWER_WRONG_MESSAGE': 'wrong. ',
+            'ANSWER_WRONG_MESSAGE': 'incorrect. ',
             'CORRECT_ANSWER_MESSAGE': 'The correct answer is %s: %s. ',
             'CORRECT_ANSWER_MESSAGE_TYPE_2': 'The correct answer is %s. ',
             'SCORE_IS_MESSAGE': 'Player %s. Your score is %s. ',
@@ -102,7 +102,7 @@ function populateGameQuestions(difficulty, currentQuestionIndex, callback) {
 }
 
 /**
- * Get the answers for a given question,
+ * Answers Randomized in Server; Function no longer needed
  * */
 function randonmizationRoundAnswers(currentAnswerArray) {
     return currentAnswerArray;
@@ -124,6 +124,11 @@ function isAnswerSlotValid(intent, answerCount) {
 function buildEndOfGameMessage(){
     let currentScore = this.attributes.currentPlayerScore;
     var highestScore = 0, winners = 0;
+    var allScores = '';
+    for(let i = 1; i <=  parseInt(this.attributes['numberOfPlayers']); i++){
+        allScores += this.t('SCORE_IS_MESSAGE', i.toString(), currentScore[i - 1].toString());
+    }
+
     currentScore.forEach(function(element){
         if (parseInt(element, 10) > highestScore){
             highestScore = parseInt(element, 10);
@@ -205,7 +210,12 @@ function handleUserGuess(userGaveUp) {
         console.log("Current Score Array: " + currentScore);
         console.log("Current Player Score: " + currentScore[currentPlayerId - 1]);
         console.log("repromptText: " + repromptText);
-        speechOutput += speechOutputAnalysis + this.t('SCORE_IS_MESSAGE', currentPlayerId.toString(), currentScore[currentPlayerId - 1].toString()) + repromptText;
+
+        speechOutput += speechOutputAnalysis;
+        for(let i = 1; i <=  parseInt(this.attributes['numberOfPlayers']); i++){
+            speechOutput += this.t('SCORE_IS_MESSAGE', i.toString(), currentScore[i - 1].toString());
+        }
+        speechOutput += repromptText;
 
         this.emit(':askWithCard', speechOutput, repromptText, this.t('GAME_NAME'), repromptText);
     }
@@ -252,6 +262,7 @@ function populateQuestionSpeech(currentQuestionIndex, gameQuestions){
     const spokenQuestion = gameQuestions[currentQuestionIndex]['question_text'].replace('&', ' and ').replace(/(_)+/, ' [blank] ');
     let repromptText = this.t('TELL_QUESTION_MESSAGE', (currentQuestionIndex % parseInt(this.attributes['numberOfPlayers'])) + 1, (currentQuestionIndex + 1).toString(), spokenQuestion);
 
+    //Build Answers based on question type
     const questionType = gameQuestions[currentQuestionIndex]['question_type'];
     if(questionType == '2'){
         var sortedAnswersArray = [];
@@ -394,7 +405,7 @@ const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
         this.emit(':ask', speechOutput, speechOutput);
     },
     'SessionEndedRequest': function () {
-        console.log(`Session ended in trivia state: ${this.event.request.reason}`);
+        console.log(`Session ended in menu state: ${this.event.request.reason}`);
     },
 });
 
