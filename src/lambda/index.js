@@ -9,8 +9,9 @@ const Alexa = require('alexa-sdk');
 const QuestionLoader = require('QuestionsLoader');
 
 const ANSWER_TYPES = {
-    TRUE_FALSE:'TRUE_FALSE',
-    MULTIPLE:'MULTIPLE_CHOICE',
+    STRAIGHT_ANSWER:'2', //Allow user to say just the answer, not the number of the answer
+    MULTIPLE_CHOICE:'1', //Require user to say the number of the answer
+    SOUND_FILE_QUESTION:'3', //Question contains sound file
 }
 const QUESTIONS_PER_PLAYER = 3; //The number of questions per user per game
 var GAME_LENGTH;  // The number of questions per trivia game.
@@ -20,6 +21,7 @@ const GAME_STATES = {
     HELP: '_HELPMODE', // The user is asking for help.
 };
 const APP_ID = "amzn1.ask.skill.ed9e8909-2925-4555-9fd6-18a95b193745";
+
 
 const languageString = {
     'en-US': {
@@ -77,6 +79,9 @@ const languageString = {
     },
 };
 
+/*
+**Use QuestionLoader module to get json of question data
+*/
 function populateGameQuestions(difficulty, currentQuestionIndex, callback) {
     var gameQuestions = [];
 
@@ -110,6 +115,7 @@ function randonmizationRoundAnswers(currentAnswerArray) {
 
 /*
 **Validates Answers Slot Data
+**Answer Slot must exist and be an integer between 1 and the number of answers
 */
 function isAnswerSlotValid(intent, answerCount) {
     const answerSlotFilled = intent && intent.slots && intent.slots.Answers && Boolean(intent.slots.Answers.value);
@@ -121,6 +127,9 @@ function isAnswerSlotValid(intent, answerCount) {
         && parseInt(intent.slots.Answers.resolutions.resolutionsPerAuthority[0].values[0].value.id, 10) > 0;
 }
 
+/*
+**Build text for all scores, winner and winning score, ending game message
+*/
 function buildEndOfGameMessage(){
     let currentScore = this.attributes.currentPlayerScore;
     var highestScore = 0, winners = 0;
@@ -154,6 +163,11 @@ function buildEndOfGameMessage(){
     return this.t('FINAL_QUESTION_MESSAGE') + winnerMessage + this.t('END_OF_GAME_MESSAGE');
 }
 
+/*
+**Assess User guess for validity and correctness.
+**Build answer response and next question.
+**If the most recent question was the last one of the game, then build end of game message
+*/
 function handleUserGuess(userGaveUp) {
     let speechOutput = '';
     let speechOutputAnalysis = '';
@@ -181,7 +195,7 @@ function handleUserGuess(userGaveUp) {
             speechOutputAnalysis = this.t('ANSWER_WRONG_MESSAGE');
         }
 
-        if(questionType == '2'){
+        if(questionType == ANSWER_TYPES.STRAIGHT_ANSWER){
             speechOutputAnalysis += this.t('CORRECT_ANSWER_MESSAGE_TYPE_2', correctAnswerText);
         }
         else{
@@ -221,6 +235,9 @@ function handleUserGuess(userGaveUp) {
     }
 }
 
+/*
+**Currently unused; use for restarting a saved game
+*/
 function rebuildCurrentQuestion(){
     let speechOutput = '';
     let speechOutputAnalysis = '';
@@ -242,6 +259,10 @@ function rebuildCurrentQuestion(){
     this.emit(':askWithCard', speechOutput, repromptText, this.t('GAME_NAME'), repromptText);
 }
 
+/*
+**Populate all question data and speech prompts into Alexa object. 
+**Automatically Emit if coming from the menu
+*/
 function populateQuestionSpeech(currentQuestionIndex, gameQuestions){
     //Get answer strings into unsorted array
     console.log("currentQuestionIndex = " + currentQuestionIndex);
@@ -264,7 +285,7 @@ function populateQuestionSpeech(currentQuestionIndex, gameQuestions){
 
     //Build Answers based on question type
     const questionType = gameQuestions[currentQuestionIndex]['question_type'];
-    if(questionType == '2'){
+    if(questionType == ANSWER_TYPES.STRAIGHT_ANSWER){
         var sortedAnswersArray = [];
         if(!isNaN(parseInt(currentCorrectAnswerText, 10))){
             sortedAnswersArray = unsortedAnswersArray.sort(function(a, b){return parseInt(a, 10) - parseInt(b, 10)});
@@ -308,6 +329,9 @@ function populateQuestionSpeech(currentQuestionIndex, gameQuestions){
     }
 }
 
+/*
+**Handlers for New Session Start
+*/
 const newSessionHandlers = {
     'LaunchRequest': function () {
         this.handler.state = GAME_STATES.MENU;
@@ -319,6 +343,9 @@ const newSessionHandlers = {
     },
 };
 
+/*
+**Handlers for Menu State
+*/
 const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
     'MainMenu': function (newGame) {
         const speechOutput = newGame ? this.t('WELCOME_MESSAGE') + this.t('MAIN_MENU') : this.t('MAIN_MENU');
@@ -326,8 +353,8 @@ const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
         this.emit(':ask', speechOutput, repromptText);
     },
     'NewGameIntent': function (newGame) {
-        console.log("in delegateSlotCollection");
-        console.log("current dialogState: "+this.event.request.dialogState);
+        console.log("in elicitSlotCollection");
+        console.log("current slots: # of Player:"+this.event.request.intent.slots.NumberOfPlayers.value + '; Difficulty: ' + this.event.request.intent.slots.DifficultyLevel.value);
         if(!this.event.request.intent.slots.NumberOfPlayers.value){
           const slotToElicit = 'NumberOfPlayers';
           const speechOutput = 'How many people will be playing? You can select up to four players.';
@@ -409,6 +436,9 @@ const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
     },
 });
 
+/*
+**Handlers for Trivia State
+*/
 const triviaStateHandlers = Alexa.CreateStateHandler(GAME_STATES.TRIVIA, {
     'AnswerIntent': function () {
         if(!this.event.request.intent.slots.Answers.value){
@@ -456,6 +486,9 @@ const triviaStateHandlers = Alexa.CreateStateHandler(GAME_STATES.TRIVIA, {
     },
 });
 
+/*
+**Handlers for Help State
+*/
 const helpStateHandlers = Alexa.CreateStateHandler(GAME_STATES.HELP, {
     'mainMenuHelp': function () {
         const helpMessage = this.t('INSTRUCTIONS_MESSAGE', QUESTIONS_PER_PLAYER) + this.t('PROMPTS_MESSAGE');
