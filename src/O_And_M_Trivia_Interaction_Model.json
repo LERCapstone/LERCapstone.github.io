@@ -1,0 +1,286 @@
+{
+    "languageModel": {
+        "invocationName": "o. and m. trivia",
+        "intents": [
+            {
+                "name": "AMAZON.CancelIntent",
+                "slots": [],
+                "samples": []
+            },
+            {
+                "name": "AMAZON.HelpIntent",
+                "slots": [],
+                "samples": [
+                    "how to play",
+                    "playing instructions",
+                    "instructions"
+                ]
+            },
+            {
+                "name": "AMAZON.PauseIntent",
+                "slots": [],
+                "samples": []
+            },
+            {
+                "name": "AMAZON.RepeatIntent",
+                "slots": [],
+                "samples": []
+            },
+            {
+                "name": "AMAZON.ResumeIntent",
+                "slots": [],
+                "samples": []
+            },
+            {
+                "name": "AMAZON.StopIntent",
+                "slots": [],
+                "samples": []
+            },
+            {
+                "name": "AnswerIntent",
+                "slots": [
+                    {
+                        "name": "Answers",
+                        "type": "trivia_answers"
+                    }
+                ],
+                "samples": [
+                    "My answer is {Answers}",
+                    "Answer {Answers}",
+                    "Option {Answers}",
+                    "{Answers}"
+                ]
+            },
+            {
+                "name": "DontKnowIntent",
+                "slots": [],
+                "samples": [
+                    "dont know",
+                    "i dont know"
+                ]
+            },
+            {
+                "name": "MainMenuIntent",
+                "slots": [],
+                "samples": [
+                    "Main Menu",
+                    "go to main menu",
+                    "go to menu",
+                    "menu",
+                    "open main menu",
+                    "open menu",
+                    "go to the main menu",
+                    "go to the menu"
+                ]
+            },
+            {
+                "name": "NewGameIntent",
+                "slots": [
+                    {
+                        "name": "NumberOfPlayers",
+                        "type": "AMAZON.NUMBER"
+                    },
+                    {
+                        "name": "DifficultyLevel",
+                        "type": "level_of_difficulty"
+                    }
+                ],
+                "samples": [
+                    "Start a new game",
+                    "Play a new game",
+                    "Start a game",
+                    "Start game",
+                    "Play a game",
+                    "Play game",
+                    "Start a new trivia game",
+                    "Play a new trivia game",
+                    "New trivia game",
+                    "New game",
+                    "Start a new game with {NumberOfPlayers} players on {DifficultyLevel}",
+                    "Play a new {NumberOfPlayers} player trivia game",
+                    "Play a new {NumberOfPlayers} player game",
+                    "start new game"
+                ]
+            },
+            {
+                "name": "PauseGameIntent",
+                "slots": [],
+                "samples": [
+                    "Pause the game",
+                    "Pause the current game",
+                    "Pause",
+                    "pause game"
+                ]
+            },
+            {
+                "name": "QuitGameIntent",
+                "slots": [],
+                "samples": [
+                    "quit",
+                    "quit game"
+                ]
+            },
+            {
+                "name": "ResumeGameIntent",
+                "slots": [],
+                "samples": [
+                    "Resume game",
+                    "continue",
+                    "resume"
+                ]
+            }
+        ],
+        "types": [
+            {
+                "name": "level_of_difficulty",
+                "values": [
+                    {
+                        "id": "1",
+                        "name": {
+                            "value": "beginner",
+                            "synonyms": [
+                                "easy",
+                                "trivial",
+                                "one"
+                            ]
+                        }
+                    },
+                    {
+                        "id": "2",
+                        "name": {
+                            "value": "intermediate",
+                            "synonyms": [
+                                "middle",
+                                "medium",
+                                "two"
+                            ]
+                        }
+                    },
+                    {
+                        "id": "3",
+                        "name": {
+                            "value": "advanced",
+                            "synonyms": [
+                                "hard",
+                                "expert",
+                                "three"
+                            ]
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "trivia_answers",
+                "values": [
+                    {
+                        "id": "1",
+                        "name": {
+                            "value": "one",
+                            "synonyms": [
+                                "true",
+                                "first",
+                                "a"
+                            ]
+                        }
+                    },
+                    {
+                        "id": "2",
+                        "name": {
+                            "value": "two",
+                            "synonyms": [
+                                "false",
+                                "second",
+                                "b"
+                            ]
+                        }
+                    },
+                    {
+                        "id": "3",
+                        "name": {
+                            "value": "three",
+                            "synonyms": [
+                                "third",
+                                "c"
+                            ]
+                        }
+                    },
+                    {
+                        "id": "4",
+                        "name": {
+                            "value": "four",
+                            "synonyms": [
+                                "fourth",
+                                "d"
+                            ]
+                        }
+                    },
+                    {
+                        "id": "5",
+                        "name": {
+                            "value": "five",
+                            "synonyms": []
+                        }
+                    },
+                    {
+                        "id": "6",
+                        "name": {
+                            "value": "six",
+                            "synonyms": []
+                        }
+                    },
+                    {
+                        "id": "7",
+                        "name": {
+                            "value": "seven",
+                            "synonyms": []
+                        }
+                    },
+                    {
+                        "id": "8",
+                        "name": {
+                            "value": "eight",
+                            "synonyms": []
+                        }
+                    },
+                    {
+                        "id": "9",
+                        "name": {
+                            "value": "nine",
+                            "synonyms": []
+                        }
+                    },
+                    {
+                        "id": "10",
+                        "name": {
+                            "value": "ten",
+                            "synonyms": []
+                        }
+                    }
+                ]
+            }
+        ]
+    },
+    "dialog": {
+        "intents": [
+            {
+                "name": "QuitGameIntent",
+                "confirmationRequired": true,
+                "prompts": {
+                    "confirmation": "Confirm.Intent-QuitGameIntent"
+                },
+                "slots": []
+            }
+        ]
+    },
+    "prompts": [
+        {
+            "id": "Confirm.Intent-QuitGameIntent",
+            "variations": [
+                {
+                    "type": "PlainText",
+                    "value": "Are you sure you want to quit the current game"
+                }
+            ]
+        }
+    ]
+}
