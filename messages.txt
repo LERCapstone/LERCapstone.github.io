@@ -1,0 +1,39 @@
+APP START:
+            'Welcome to O And M Trivia. Say start a new game or how to play. ',
+
+ 'NEW_GAME_START_CONFIRMATION': 
+            'Do you want to start a game with %s player on %s difficulty? ', //Default is 1 player on beginner difficulty
+ 
+ 'OPTION_PROMPTS'
+            'How many people will be playing? You can select up to four players.'
+            'Choose a level of difficulty for this game. Beginner, Intermediate, or Advanced.'
+           
+ //Trivia
+            'TELL_QUESTION_MESSAGE': 'Player %s. Question %s. %s ' //Player Number; Question Number; Question/Answer Text
+            'ANSWER_IS_MESSAGE': 'That answer is ',
+            'ANSWER_CORRECT_MESSAGE': 'correct. ',
+            'ANSWER_WRONG_MESSAGE': 'incorrect. ',
+      //Use only if answer is wrong or not provided// 'The correct answer is %s: %s. ', //Answer Number; Answer Text;
+      //Output every player score at the end of every question// 'Player %s. Your score is %s. ' //Player Number; Score;
+      
+//End of Game
+            'That was the last question. 'The winner is Player %s ', //Player Number
+            'WINNER_SCORE_MESSAGE': 'You got %s out of %s questions correct. ',
+            'END_OF_GAME_MESSAGE': 'Congratulations to everyone! Thanks for playing! ',
+
+//Help
+'INSTRUCTIONS_MESSAGE': 
+            'I will ask you a series of %s questions per player. ' +
+            'Listen to the answer options and say the number of the answer that you think is correct. ' +
+            'If it is true or false, you can just say the answer. ' +
+            'At the end I will total the scores and announce the winner. ',
+            ''At any time, you can say the following options. '+
+            'Main menu. Start New Game. Pause Game. Resume Game. Cancel Game. Help. Exit. ',
+            'Say help to listen to these instructions again or at any time. ',
+      //If help was initiated from trivia// 'Say resume to continue with the game. ',
+      //If help was initiated from the main menu// 'Say resume to go back to the menu. ',
+            
+//Exit
+            'GOODBYE_MESSAGE': 'Ok, we\'ll play another time. Goodbye! ',
+            
+            'Response to a phrase that is not recognized as a response': 'Try saying a number between 1 and %s ',

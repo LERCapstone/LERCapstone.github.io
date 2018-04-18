@@ -12,6 +12,7 @@ const ANSWER_TYPES = {
     STRAIGHT_ANSWER:'2', //Allow user to say just the answer, not the number of the answer
     MULTIPLE_CHOICE:'1', //Require user to say the number of the answer
     SOUND_FILE_QUESTION:'3', //Question contains sound file
+    SOUND_FILE_ANSWER:'4', //Question in which the answers are all sound files
 }
 const QUESTIONS_PER_PLAYER = 3; //The number of questions per user per game
 var GAME_LENGTH;  // The number of questions per trivia game.
@@ -29,11 +30,12 @@ const languageString = {
             //Menu
             'GAME_NAME': 'Orientation and Mobility Trivia ',
             'MAIN_MENU': 'Say start a new game or how to play. ',
-            'WELCOME_MESSAGE': 'Welcome to A.P.H. O And M Trivia. ', /* Edit for correct name*/
+            'WELCOME_MESSAGE': 'Welcome to O And M Trivia. ', /* Edit for correct name*/
 
             //Help
             'INSTRUCTIONS_MESSAGE': 'I will ask you a series of %s questions per player. ' +
             'Listen to the answer options and say the number of the answer that you think is correct. ' +
+            'If it is true or false, you can just say the answer. ' +
             'At the end I will total the scores and announce the winner. ',
             'PROMPTS_MESSAGE': 'At any time, you can say the following options. '+
             'Main menu. Start New Game. Pause Game. Resume Game. Cancel Game. Help. Exit. ',
@@ -43,9 +45,9 @@ const languageString = {
             'TRIVIA_UNHANDLED': 'Try saying a number between 1 and %s ',
 
             //Trivia
-            'START_TRIVIA_INSTRUCTIONS': 'I will ask each player %s questions. The one with the most correct answers at the end is the winner. ' +
-            'To answer a question, say the number of the answer you think is correct. If it is true or false, you can just say the answer. Lets begin. ',
+            'START_TRIVIA_INSTRUCTIONS': 'Lets begin. ',
             'TELL_QUESTION_MESSAGE': 'Player %s. Question %s. %s ',
+            'NEW_GAME_START_CONFIRMATION': 'Do you want to start a game with %s player on %s difficulty? ',
 
             //Answers
             'ANSWER_IS_MESSAGE': 'That answer is ',
@@ -280,7 +282,7 @@ function populateQuestionSpeech(currentQuestionIndex, gameQuestions){
     console.log("Correct Answer Index: " + (currentCorrectAnswerIndex + 1));
 
     //Build Question Text
-    const spokenQuestion = gameQuestions[currentQuestionIndex]['question_text'].replace('&', ' and ').replace(/(_)+/, ' [blank] ');
+    var spokenQuestion = gameQuestions[currentQuestionIndex]['question_text'].replace('&', ' and ').replace(/(_)+/, ' [blank] ');
     let repromptText = this.t('TELL_QUESTION_MESSAGE', (currentQuestionIndex % parseInt(this.attributes['numberOfPlayers'])) + 1, (currentQuestionIndex + 1).toString(), spokenQuestion);
 
     //Build Answers based on question type
@@ -304,6 +306,29 @@ function populateQuestionSpeech(currentQuestionIndex, gameQuestions){
                 repromptText += 'or ';
             }
             console.log("Answer " + (i + 1) + ": " + sortedAnswersArray[i]);
+        }
+    }
+    else if (questionType == ANSWER_TYPES.SOUND_FILE_QUESTION){
+        var soundFile = gameQuestions[currentQuestionIndex]['sound_bite_url'];
+        spokenQuestion = spokenQuestion.replace('[sound]', '<audio src="' + soundFile + '" />')
+        repromptText = this.t('TELL_QUESTION_MESSAGE', (currentQuestionIndex % parseInt(this.attributes['numberOfPlayers'])) + 1, (currentQuestionIndex + 1).toString(), spokenQuestion);
+        
+        for (let i = 0; i < randomRoundAnswers.length; i++) {
+            repromptText += `${i + 1}. ${randomRoundAnswers[i]}. `;
+            console.log("Answer " + (i + 1) + ": " + randomRoundAnswers[i]);
+        }
+    }
+    else if (questionType == ANSWER_TYPES.SOUND_FILE_ANSWER){
+        var sortedAnswersSoundFileArray = [];
+        var answerIndex;
+        for(let i = 0; i < randomRoundAnswers.length; i++){
+            answerIndex = unsortedAnswersArray.indexOf(randomRoundAnswers[i]);
+            sortedAnswersSoundFileArray[i] = unsortedAnswerDictionaries[answerIndex]['answer_sound_bite_url'];
+        }
+
+        for (let i = 0; i < sortedAnswersSoundFileArray.length; i++) {
+            repromptText += `${i + 1}. <audio src="${sortedAnswersSoundFileArray[i]}" /> `;
+            console.log("Answer " + (i + 1) + ": " + randomRoundAnswers[i] + ' ' + sortedAnswersSoundFileArray[i]);
         }
     }
     else{
@@ -353,28 +378,60 @@ const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
         this.emit(':ask', speechOutput, repromptText);
     },
     'NewGameIntent': function (newGame) {
-        console.log("in elicitSlotCollection");
+        console.log("Slot Creation and Confirmation");
         console.log("current slots: # of Player:"+this.event.request.intent.slots.NumberOfPlayers.value + '; Difficulty: ' + this.event.request.intent.slots.DifficultyLevel.value);
-        if(!this.event.request.intent.slots.NumberOfPlayers.value){
-          const slotToElicit = 'NumberOfPlayers';
-          const speechOutput = 'How many people will be playing? You can select up to four players.';
-          this.emit(':elicitSlot', slotToElicit, speechOutput, speechOutput);
-        }
-        else if(!this.event.request.intent.slots.DifficultyLevel.value){
-          const slotToElicit = 'DifficultyLevel';
-          const speechOutput = 'Choose a level of difficulty for this game. Beginner, Intermediate, or Advanced.';
-          this.emit(':elicitSlot', slotToElicit, speechOutput, speechOutput);
-        }
+        const intentObj = this.event.request.intent;
+        console.log("Current object confirmation: " + intentObj.confirmationStatus);
+        if (intentObj.confirmationStatus !== 'CONFIRMED') {
+            if (intentObj.confirmationStatus !== 'DENIED') {
+                // Initial State
+                if(!intentObj.slots.NumberOfPlayers.value){
+                    console.log("Number of Players not provided. Use default of 1.");
+                    intentObj.slots.NumberOfPlayers.value = '1';
+                }
+                if(!intentObj.slots.DifficultyLevel.value){
+                    console.log("Difficulty not provided. Use default of beginner.");
+                    intentObj.slots.DifficultyLevel.value = 'beginner';
+                }
 
-        /*
-        if(this.event.request.dialogState !== 'COMPLETED'){
-            console.log("in not completed");
-            this.emit(':delegate');
-        }
-        */
-        else{
-            console.log("in completed");
-            const difficultyString = this.event.request.intent.slots.DifficultyLevel.value;
+                const speechOutput = this.t('NEW_GAME_START_CONFIRMATION', intentObj.slots.NumberOfPlayers.value, intentObj.slots.DifficultyLevel.value);
+                const repromptSpeech = speechOutput;
+                
+                Object.assign(this.attributes, {
+                    'confirmationCounter': '0',
+                });
+
+                console.log("current slots: # of Player:" + intentObj.slots.NumberOfPlayers.value + '; Difficulty: ' + intentObj.slots.DifficultyLevel.value);
+                this.emit(':confirmIntent', speechOutput, repromptSpeech, intentObj);
+            } else {
+                console.log("Explicitly Elicit Slots");
+                if(this.attributes['confirmationCounter'] == '0'){
+                    intentObj.slots.NumberOfPlayers.value = '';
+                    intentObj.slots.DifficultyLevel.value = '';
+                }
+                console.log("current slots: # of Player:"+intentObj.slots.NumberOfPlayers.value + '; Difficulty: ' + intentObj.slots.DifficultyLevel.value);
+                
+                if (intentObj.slots.NumberOfPlayers.value == ''){
+                    const slotToElicit = 'NumberOfPlayers';
+                    const speechOutput = 'How many people will be playing? You can select up to four players.';
+                    this.attributes['confirmationCounter'] = parseInt(this.attributes['confirmationCounter'], 10) + 1;
+                    this.emit(':elicitSlot', slotToElicit, speechOutput, speechOutput, intentObj);
+                }
+                else if(intentObj.slots.DifficultyLevel.value == ''){
+                    const slotToElicit = 'DifficultyLevel';
+                    const speechOutput = 'Choose a level of difficulty for this game. Beginner, Intermediate, or Advanced.';
+                    this.attributes['confirmationCounter'] = parseInt(this.attributes['confirmationCounter'], 10) + 1;
+                    this.emit(':elicitSlot', slotToElicit, speechOutput, speechOutput, intentObj);
+                }
+                else{            
+                    const speechOutput = this.t('NEW_GAME_START_CONFIRMATION', intentObj.slots.NumberOfPlayers.value, intentObj.slots.DifficultyLevel.value);
+                    this.attributes['confirmationCounter'] = 0;
+                    this.emit(':confirmIntent', speechOutput, speechOutput, intentObj);
+                }
+            }
+        } else {
+            console.log("Options Confirmed. New Game Starting");
+            const difficultyString = intentObj.slots.DifficultyLevel.value;
             var difficulty = 0;
             switch(difficultyString){
                 case 'beginner':
@@ -390,25 +447,24 @@ const menuStateHandlers = Alexa.CreateStateHandler(GAME_STATES.MENU, {
                     difficulty = 1;
             }
             
-            const numberOfPlayers = parseInt(this.event.request.intent.slots.NumberOfPlayers.value, 10);
+            const numberOfPlayers = parseInt(intentObj.slots.NumberOfPlayers.value, 10);
             const currentQuestionIndex = 0;
-
+    
             GAME_LENGTH = QUESTIONS_PER_PLAYER * numberOfPlayers;
-
+    
             var playerScore = Array(numberOfPlayers).fill(0);
             console.log("Number of Players: " + numberOfPlayers);
             console.log("Initial Scores: " + playerScore);
             console.log("DifficultyString: " + difficultyString);
             console.log("Difficulty: " + difficulty);
-
+    
             Object.assign(this.attributes, {
                 'numberOfPlayers': numberOfPlayers,
                 'currentPlayerScore': playerScore,
             });
-
+    
             console.log("this into populateGameQuestions: " + this);
             populateGameQuestions.call(this, difficulty, currentQuestionIndex, populateQuestionSpeech);
-
         }
     },
     'AMAZON.RepeatIntent': function () {
@@ -443,7 +499,7 @@ const triviaStateHandlers = Alexa.CreateStateHandler(GAME_STATES.TRIVIA, {
     'AnswerIntent': function () {
         if(!this.event.request.intent.slots.Answers.value){
             const slotToElicit = 'Answers';
-            const speechOutput = 'How many people will by playing? You can select up to four players.';
+            const speechOutput = 'I didn\'t understand your answer. Please say again';
             this.emit(':elicitSlot', slotToElicit, speechOutput, speechOutput);
           }
         else{
