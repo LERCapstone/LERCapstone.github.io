@@ -15,6 +15,7 @@ const ANSWER_TYPES = {
     SOUND_FILE_ANSWER:'4', //Question in which the answers are all sound files
 }
 const QUESTIONS_PER_PLAYER = 3; //The number of questions per user per game
+const ANSWER_COUNT = 4;
 var GAME_LENGTH;  // The number of questions per trivia game.
 const GAME_STATES = {
     TRIVIA: '_TRIVIAMODE', // Asking trivia questions.
@@ -38,7 +39,7 @@ const languageString = {
             'If it is true or false, you can just say the answer. ' +
             'At the end I will total the scores and announce the winner. ',
             'PROMPTS_MESSAGE': 'At any time, you can say the following options. '+
-            'Main menu. Start New Game. Pause Game. Resume Game. Cancel Game. Help. Exit. ',
+            'Main menu. Start New Game. Cancel. Help. Exit. ',
             'REPEAT_INSTRUCTIONS_MESSAGE': 'Say help to listen to these instructions again or at any time. ',
             'RETURN_TO_GAME_FROM_HELP_MESSAGE': 'Say resume to continue with the game. ',
             'RETURN_TO_MENU_FROM_HELP_MESSAGE': 'Say resume to go back to the menu. ',
@@ -184,7 +185,9 @@ function handleUserGuess(userGaveUp) {
 
     const answerSlotValid = isAnswerSlotValid(this.event.request.intent, gameQuestions[currentQuestionIndex]['answers'].length);
 
-    console.log("Player Guess: " + this.event.request.intent.slots.Answers.resolutions.resolutionsPerAuthority[0].values[0].value.id);
+    if(!userGaveUp){
+        console.log("Player Guess: " + this.event.request.intent.slots.Answers.resolutions.resolutionsPerAuthority[0].values[0].value.id);
+    }
     console.log("Correct Answer Index: " + this.attributes['correctAnswerIndex']);
     console.log("answerSlotValid: " + answerSlotValid);
 
@@ -513,6 +516,9 @@ const triviaStateHandlers = Alexa.CreateStateHandler(GAME_STATES.TRIVIA, {
     'DontKnowIntent': function () {
         handleUserGuess.call(this, true);
     },
+    'ResumeGameIntent': function() {
+        rebuildCurrentQuestion.call(this);
+    },
     'AMAZON.RepeatIntent': function () {
         this.emit(':ask', this.attributes['speechOutput'], this.attributes['repromptText']);
     },
@@ -531,9 +537,10 @@ const triviaStateHandlers = Alexa.CreateStateHandler(GAME_STATES.TRIVIA, {
         this.emit(':tell', this.t('GOODBYE_MESSAGE'));
     },
      'AMAZON.ResumeIntent': function () {
-        this.emit(':tell', this.t('GOODBYE_MESSAGE'));
+        rebuildCurrentQuestion.call(this);
     },
     'Unhandled': function () {
+        console.log(`UNHANDLED INTENT: ${this.event.request.reason}`);
         const speechOutput = this.t('TRIVIA_UNHANDLED', ANSWER_COUNT.toString());
         this.emit(':ask', speechOutput, speechOutput);
     },
@@ -548,14 +555,14 @@ const triviaStateHandlers = Alexa.CreateStateHandler(GAME_STATES.TRIVIA, {
 const helpStateHandlers = Alexa.CreateStateHandler(GAME_STATES.HELP, {
     'mainMenuHelp': function () {
         const helpMessage = this.t('INSTRUCTIONS_MESSAGE', QUESTIONS_PER_PLAYER) + this.t('PROMPTS_MESSAGE');
-        const speechOutput = helpMessage + + this.t('REPEAT_INSTRUCTIONS_MESSAGE') + this.t('RETURN_TO_MENU_FROM_HELP_MESSAGE');
+        const speechOutput = helpMessage + this.t('REPEAT_INSTRUCTIONS_MESSAGE') + this.t('RETURN_TO_MENU_FROM_HELP_MESSAGE');
         const repromptText = speechOutput;
         this.handler.state = GAME_STATES.MENU;
         this.emit(':ask', speechOutput, repromptText);
     },
     'triviaHelp': function () {
         const helpMessage = this.t('INSTRUCTIONS_MESSAGE', QUESTIONS_PER_PLAYER) + this.t('PROMPTS_MESSAGE');
-        const speechOutput = helpMessage + + this.t('REPEAT_INSTRUCTIONS_MESSAGE') + this.t('RETURN_TO_GAME_FROM_HELP_MESSAGE');
+        const speechOutput = helpMessage + this.t('REPEAT_INSTRUCTIONS_MESSAGE') + this.t('RETURN_TO_GAME_FROM_HELP_MESSAGE');
         const repromptText = speechOutput;
         this.handler.state = GAME_STATES.TRIVIA;
         this.emit(':ask', speechOutput, repromptText);
